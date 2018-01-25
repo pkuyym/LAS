@@ -1,6 +1,6 @@
 import paddle.v2.fluid as fluid
 import paddle.v2.fluid.layers as layers
-from model_utils.layers import blstm, stacked_lstm_unit, pblstm, attention
+from model_utils.layers import blstm, stacked_lstm_unit, pblstm
 
 
 def listener(audio_seq, stacked_num, unit_size, pyramid_steps, dropout_prob,
@@ -32,13 +32,17 @@ def attention(decoder_state, encoder_vec):
     return context
 
 
-def speller(stacked_num, listener_feature, unit_size, label_dim):
-    trg_word_idx = fluid.layers.data(
-        name='target_sequence', shape=[1], dtype='int64', lod_level=1)
+'''
+trg_word_idx = fluid.layers.data(
+    name='target_sequence', shape=[1], dtype='int64', lod_level=1)
 
-    true_token_flags = fluid.layers.data(
-        name='true_token_flag', shape=[1], dtype='int64', lod_level=1)
+true_token_flags = fluid.layers.data(
+    name='true_token_flag', shape=[1], dtype='int32', lod_level=1)
+'''
 
+
+def speller(trg_word_idx, true_token_flags, stacked_num, listener_feature,
+            unit_size, label_dim):
     encoder_last_step = layers.sequence_pool(
         input=listener_feature, pool_type='last')
 
