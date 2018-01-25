@@ -18,6 +18,7 @@ class DataGenerator(object):
                 self._X_train, self._y_train, self._X_val, self._y_val,
                 self._X_test, self._y_test
             ] = cPickle.load(cPickle_file)
+        self._feature_dimension = self._X_train[0].shape[1]
         self._max_idx = max_idx  # 0 and 1 are reserved
         self._audio_dtype = audio_dtype
         self._label_dtype = label_dtype
@@ -78,7 +79,7 @@ class DataGenerator(object):
         padded_data = np.zeros(
             (actual_len + pad_len, data.shape[1])).astype(self._audio_dtype)
         padded_data[:actual_len, :] = data
-        return padded_data, actual_len
+        return padded_data, np.array([actual_len]).astype(self._label_dtype)
 
     def _process_label(self, label_data):
         processed_label_data = []
@@ -91,8 +92,12 @@ class DataGenerator(object):
         return np.array(processed_label_data).astype(self._label_dtype)
 
     def _generate_true_label_flags(self, label_seq, teacher_force_rate):
-        true_label_flags = np.ones(label_seq.shape).astype('int32')
+        true_label_flags = np.ones(label_seq.shape).astype(self._label_dtype)
         for i, label in enumerate(label_seq):
             if np.random.random_sample() >= teacher_force_rate:
                 true_label_flags[i] = 0
         return true_label_flags
+
+    @property
+    def feature_dimension(self):
+        return self._feature_dimension

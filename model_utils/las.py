@@ -32,17 +32,8 @@ def attention(decoder_state, encoder_vec):
     return context
 
 
-'''
-trg_word_idx = fluid.layers.data(
-    name='target_sequence', shape=[1], dtype='int64', lod_level=1)
-
-true_token_flags = fluid.layers.data(
-    name='true_token_flag', shape=[1], dtype='int32', lod_level=1)
-'''
-
-
 def speller(trg_word_idx, true_token_flags, stacked_num, listener_feature,
-            unit_size, label_dim):
+            unit_size, label_dim, is_training):
     encoder_last_step = layers.sequence_pool(
         input=listener_feature, pool_type='last')
 
