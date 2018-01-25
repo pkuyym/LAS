@@ -67,16 +67,3 @@ def stacked_lstm_unit(x_t, hidden_t_prev_list, cell_t_prev_list, unit_size):
         cell_t_list.append(cell_t)
         x_t = hidden_t
     return hidden_t_list, cell_t_list
-
-
-def attention(decoder_state, encoder_vec):
-    decoder_state_expand = layers.sequence_expand(
-        x=decoder_state, y=encoder_vec)
-    attention_weights = layers.fc(
-        input=[decoder_state_expand, encoder_vec], size=1, bias_attr=False)
-    attention_weights = layers.sequence_softmax(x=attention_weights)
-    weigths_reshape = fluid.layers.reshape(x=attention_weights, shape=[-1])
-    scaled = fluid.layers.elementwise_mul(
-        x=encoder_vec, y=weigths_reshape, axis=0)
-    context = fluid.layers.sequence_pool(input=scaled, pool_type='sum')
-    return context

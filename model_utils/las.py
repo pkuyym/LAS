@@ -19,6 +19,19 @@ def listener(audio_seq, stacked_num, unit_size, pyramid_steps, dropout_prob,
     return output
 
 
+def attention(decoder_state, encoder_vec):
+    decoder_state_expand = layers.sequence_expand(
+        x=decoder_state, y=encoder_vec)
+    attention_weights = layers.fc(
+        input=[decoder_state_expand, encoder_vec], size=1, bias_attr=False)
+    attention_weights = layers.sequence_softmax(x=attention_weights)
+    weigths_reshape = fluid.layers.reshape(x=attention_weights, shape=[-1])
+    scaled = fluid.layers.elementwise_mul(
+        x=encoder_vec, y=weigths_reshape, axis=0)
+    context = fluid.layers.sequence_pool(input=scaled, pool_type='sum')
+    return context
+
+
 def speller(stacked_num, listener_feature, unit_size, label_dim):
     trg_word_idx = fluid.layers.data(
         name='target_sequence', shape=[1], dtype='int64', lod_level=1)
