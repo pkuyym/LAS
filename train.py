@@ -36,7 +36,9 @@ speller_stacked_num = 1
 speller_hidden_dim = 512
 dropout_prob = 0.0
 batch_size = 4
-epoch = 2
+epoch_num = 2
+teacher_force_rate_upperbound = 0.8
+teacher_force_rate_lowerbound = 0.0
 
 data_generator = DataGenerator(
     data_path=data_path,
@@ -85,13 +87,18 @@ place = core.CUDAPlace(0)
 exe = Executor(place)
 exe.run(framework.default_startup_program())
 
-for epoch_id in xrange(epoch):
+for epoch_id in xrange(epoch_num):
+
+    teacher_force_rate = teacher_force_rate_upperbound - (
+        teacher_force_rate_upperbound - teacher_force_rate_lowerbound) * (
+            float(epoch_id) / epoch_num)
 
     train_batch_reader = data_generator.create_batch_reader(
         batch_size=batch_size,
         is_shuffle=True,
         min_batch_size=4,
-        dataset_type='TRAIN')
+        dataset_type='TRAIN',
+        teacher_force_rate=teacher_force_rate)
 
     for batch_id, data in enumerate(
             adapt_batch_reader(train_batch_reader, place)):
