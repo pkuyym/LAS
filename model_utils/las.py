@@ -59,6 +59,7 @@ def speller(trg_word_idx, true_token_flags, stacked_num, listener_feature,
         ]
 
         context_mem = rnn.memory(init=encoder_last_step, need_reorder=True)
+
         out_mem = rnn.memory(value=0, dtype='float32', shape=[label_dim])
         out_mem.stop_gradient = True
 

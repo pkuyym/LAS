@@ -58,10 +58,13 @@ class DataGenerator(object):
                 padded_data, actual_len = self._padding_data(
                     data, self._padding_divisor)
                 label_seq = self._process_label(label_data[i])
+                trg_seq = np.array(label_seq).astype(self._label_dtype)
+                trg_next_seq = np.array([0] + label_seq[:-1]).astype(
+                    self._label_dtype)
                 true_label_flags = self._generate_true_label_flags(
-                    label_seq, teacher_force_rate)
-                batch.append(
-                    (padded_data, label_seq, true_label_flags, actual_len))
+                    trg_seq, teacher_force_rate)
+                batch.append((padded_data, trg_seq, trg_next_seq,
+                              true_label_flags, actual_len))
                 if len(batch) == batch_size:
                     yield batch
                     batch = []
@@ -89,7 +92,7 @@ class DataGenerator(object):
                 processed_label_data.append(label)
                 last_label = label
         processed_label_data.append(1)  # make label end with <eos>
-        return np.array(processed_label_data).astype(self._label_dtype)
+        return processed_label_data
 
     def _generate_true_label_flags(self, label_seq, teacher_force_rate):
         true_label_flags = np.ones(label_seq.shape).astype(self._label_dtype)
