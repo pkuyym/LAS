@@ -7,6 +7,7 @@ from paddle.v2.fluid.executor import Executor
 from data_utils.timit_data import DataGenerator
 from model_utils.las import listener, speller
 from utils.utility import lodtensor_to_ndarray
+from config.las_example_config import cfg
 
 
 def adapt_batch_reader(batch_reader, place):
@@ -25,25 +26,10 @@ def adapt_batch_reader(batch_reader, place):
         }
 
 
-cpu_place = core.CPUPlace()
-data_path = './data/timit/std_preprocess_26_ch.pkl'
-listener_stacked_num = 1
-max_label_idx = 61
-label_dim = max_label_idx + 2
-listener_hidden_dim = 256
-pyramid_steps = 2
-speller_stacked_num = 1
-speller_hidden_dim = 512
-dropout_prob = 0.0
-batch_size = 4
-epoch_num = 2
-teacher_force_rate_upperbound = 0.8
-teacher_force_rate_lowerbound = 0.0
-
 data_generator = DataGenerator(
-    data_path=data_path,
-    padding_divisor=2**listener_stacked_num,
-    max_idx=max_label_idx)
+    data_path=cfg.data.path,
+    padding_divisor=2**cfg.net.listener_stacked_num,
+    max_idx=cfg.data.max_label_idx)
 
 audio_seq = fluid.layers.data(
     name='audio_sequence',
@@ -53,10 +39,10 @@ audio_seq = fluid.layers.data(
 
 listener = listener(
     audio_seq=audio_seq,
-    stacked_num=listener_stacked_num,
-    unit_size=listener_hidden_dim,
-    pyramid_steps=pyramid_steps,
-    dropout_prob=dropout_prob,
+    stacked_num=cfg.net.listener_stacked_num,
+    unit_size=cfg.net.listener_hidden_dim,
+    pyramid_steps=cfg.net.pyramid_steps,
+    dropout_prob=cfg.net.dropout_prob,
     is_training=True)
 
 trg_word_idx = fluid.layers.data(
@@ -68,10 +54,10 @@ true_token_flags = fluid.layers.data(
 speller = speller(
     trg_word_idx=trg_word_idx,
     true_token_flags=true_token_flags,
-    stacked_num=speller_stacked_num,
+    stacked_num=cfg.net.speller_stacked_num,
     listener_feature=listener,
-    unit_size=speller_hidden_dim,
-    label_dim=label_dim,
+    unit_size=cfg.net.speller_hidden_dim,
+    label_dim=cfg.net.label_dim,
     is_training=True)
 
 label = fluid.layers.data(
@@ -83,20 +69,20 @@ avg_loss = layers.mean(x=loss)
 optimizer = fluid.optimizer.Adam(learning_rate=1e-4)
 optimizer.minimize(avg_loss)
 
-place = core.CUDAPlace(0)
+place = core.CPUPlace() if cfg.device == 'CPU' else core.CUDAPlace(0)
 exe = Executor(place)
 exe.run(framework.default_startup_program())
 
-for epoch_id in xrange(epoch_num):
-
-    teacher_force_rate = teacher_force_rate_upperbound - (
-        teacher_force_rate_upperbound - teacher_force_rate_lowerbound) * (
-            float(epoch_id) / epoch_num)
+for epoch_id in xrange(cfg.train.epoch_num):
+    teacher_force_rate = cfg.train.teacher_force_rate_upperbound - (
+        cfg.train.teacher_force_rate_upperbound -
+        cfg.train.teacher_force_rate_lowerbound) * (float(epoch_id) /
+                                                    cfg.train.epoch_num)
 
     train_batch_reader = data_generator.create_batch_reader(
-        batch_size=batch_size,
+        batch_size=cfg.train.batch_size,
         is_shuffle=True,
-        min_batch_size=4,
+        min_batch_size=cfg.train.min_batch_size,
         dataset_type='TRAIN',
         teacher_force_rate=teacher_force_rate)
 
